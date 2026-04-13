@@ -1,31 +1,28 @@
 package Automatos.AFD;
 
-public class AFD {
-    private final String estadoInicial;
-    private final String[] estadosFinais;
-    private final String[] alfabeto;
-    private final String[][] transicoes;
+import java.util.HashMap;
+import java.util.Map;
 
-    public AFD(String estadoInicial, String[] estadosFinais, String[] alfabeto, String[][] transicoes) {
+public class AFD {
+    private final EstadoAFD estadoInicial;
+    private final Map<String, EstadoAFD> estados;
+    private final String[] alfabeto;
+
+    public AFD(EstadoAFD estadoInicial, Map<String, EstadoAFD> estados, String[] alfabeto) {
         this.estadoInicial = estadoInicial;
-        this.estadosFinais = estadosFinais;
+        this.estados = estados;
         this.alfabeto = alfabeto;
-        this.transicoes = transicoes;
     }
 
-    public String getEstadoInicial() {
+    public EstadoAFD getEstadoInicial() {
         return estadoInicial;
     }
 
-    public String[] getEstadosFinais() {
-        return estadosFinais;
+    public Map<String, EstadoAFD> getEstados() {
+        return estados;
     }
 
     public String[] getAlfabeto() {
         return alfabeto;
-    }
-
-    public String[][] getTransicoes() {
-        return transicoes;
     }
 }

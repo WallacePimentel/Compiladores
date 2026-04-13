@@ -1,6 +1,7 @@
 package Automatos.AFD;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class EstadoAFD {
     private final String nome;
@@ -19,5 +20,22 @@ public class EstadoAFD {
 
     public boolean isFinal() {
         return isFinal;
+    }
+
+    public Map<String, EstadoAFD> getTransicoes() {
+        return transicoes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EstadoAFD that = (EstadoAFD) o;
+        return Objects.equals(nome, that.nome);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nome);
     }
 }
