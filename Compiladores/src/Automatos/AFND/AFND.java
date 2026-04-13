@@ -1,15 +1,29 @@
 package Automatos.AFND;
 
-public class AFND {
-    private final String estadoInicial;
-    private final String[] estadosFinais;
-    private final String[] alfabeto;
-    private final EstadoAFND[][] transicoes;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
-    public AFND(String estadoInicial, String[] estadosFinais, String[] alfabeto, EstadoAFND[][] transicoes) {
+public class AFND {
+    private final EstadoAFND estadoInicial;
+    private final Map<Integer, EstadoAFND> estados;
+    private final String[] alfabeto;
+
+    public AFND(EstadoAFND estadoInicial, Map<Integer, EstadoAFND> estados, String[] alfabeto) {
         this.estadoInicial = estadoInicial;
-        this.estadosFinais = estadosFinais;
+        this.estados = estados;
         this.alfabeto = alfabeto;
-        this.transicoes = transicoes;
+    }
+
+    public EstadoAFND getEstadoInicial() {
+        return estadoInicial;
+    }
+
+    public Map<Integer, EstadoAFND> getEstados() {
+        return estados;
+    }
+
+    public String[] getAlfabeto() {
+        return alfabeto;
     }
 }
