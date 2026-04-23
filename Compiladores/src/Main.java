@@ -1,145 +1,64 @@
-import Automatos.AFD.AFD;
-import Automatos.AFD.EstadoAFD;
-import Automatos.AFND.AFND;
-import Automatos.AFND.EstadoAFND;
-import Automatos.TransformadorAFD;
+import GeradorScanner.GeradorScanner;
+import ExpressoesRegulares.ExpressaoRegular;
+import utils.RegexUtils;
 
 import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("═══════════════════════════════════════════════════════════");
-        System.out.println("        CONVERSOR DE AFND PARA AFD");
-        System.out.println("═══════════════════════════════════════════════════════════\n");
 
-        // Criar AFND
-        AFND afnd = criarAFNDExemplo();
+        // Base digit = (0|1|2|3)
+        final String DIGIT = "(0|1|2|3|4|5|6|7|8|9)";
+        final String INT = DIGIT + "+";
 
-        System.out.println(">>> AUTÔMATO FINITO NÃO DETERMINÍSTICO (AFND) <<<\n");
-        imprimirAFND(afnd);
+        final String FLOAT = DIGIT + "+@" + DIGIT + "+";
 
-        // Transformar AFND em AFD
-        TransformadorAFD transformador = new TransformadorAFD(afnd);
-        AFD afd = transformador.getAFD();
+        final String CHAR = "(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)";
 
-        System.out.println("\n>>> AUTÔMATO FINITO DETERMINÍSTICO (AFD) <<<\n");
-        imprimirAFD(afd);
+        final String STRING = CHAR + "(" + CHAR + "|" + DIGIT + ")*";
 
-        // Testar aceitação de strings
-        System.out.println("\n═══════════════════════════════════════════════════════════");
-        System.out.println("        TESTE DE ACEITAÇÃO");
-        System.out.println("═══════════════════════════════════════════════════════════\n");
+        System.out.println("Expressões regulares (posFixa):");
+        System.out.println("INT: " + RegexUtils.infixaParaPosfixa(INT));
+        System.out.println("FLOAT: " + RegexUtils.infixaParaPosfixa(FLOAT));
+        System.out.println("CHAR: " + RegexUtils.infixaParaPosfixa(CHAR));
+        System.out.println("STRING: " + RegexUtils.infixaParaPosfixa(STRING));
+        List<ExpressaoRegular> expressoes = List.of(
+                // palavras-chave (maior prioridade por vir primeiro)
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa("if"), "KW_IF"),
 
-        String[] strings = {"abb", "aabb", "babb", "aaabbb", "ab", "abab", "asjdnjalsn", "abbbb"};
-        for (String s : strings) {
-            boolean aceita = testarCadeia(afd, s);
-            System.out.printf("String '%s': %s\n", s, aceita ? "✓ ACEITA" : "✗ REJEITA");
-        }
-    }
+                // números
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(FLOAT), "FLOAT"),
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(INT), "INT"),
 
-    private static AFND criarAFNDExemplo() {
-        String[] alfabeto = {"a", "b"};
+                // literais
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(CHAR), "CHAR"),
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(STRING), "STRING")
+        );
 
-        // Criar estados
-        Map<Integer, EstadoAFND> estados = new HashMap<>();
+        GeradorScanner scanner = new GeradorScanner(expressoes);
 
-        EstadoAFND q0 = new EstadoAFND(0, false, new HashMap<>());
-        EstadoAFND q1 = new EstadoAFND(1, false, new HashMap<>());
-        EstadoAFND q2 = new EstadoAFND(2, false, new HashMap<>());
-        EstadoAFND q3 = new EstadoAFND(3, true, new HashMap<>());
+        System.out.println();
+        System.out.println("Scanner pronto. Digite uma string para identificar o token (ENTER vazio para sair).\n");
 
-        estados.put(0, q0);
-        estados.put(1, q1);
-        estados.put(2, q2);
-        estados.put(3, q3);
+        try (java.util.Scanner in = new java.util.Scanner(System.in)) {
+            while (true) {
+                System.out.print("> ");
+                if (!in.hasNextLine()) break;
 
-        // Configurar transições para AFND
-        q0.getTransicoes().put("a", new HashSet<>(List.of(q0, q1)));
-        q0.getTransicoes().put("b", new HashSet<>(Collections.singletonList(q0)));
+                String s = in.nextLine();
+                if (s.isEmpty()) break;
 
-        q1.getTransicoes().put("a", new HashSet<>());
-        q1.getTransicoes().put("b", new HashSet<>(Collections.singletonList(q2)));
+                String[] tokens = s.trim().split("\\s+");
+                for (String t : tokens) {
+                    var token = scanner.identificarToken(t);
 
-        q2.getTransicoes().put("a", new HashSet<>());
-        q2.getTransicoes().put("b", new HashSet<>(Collections.singletonList(q3)));
-
-        q3.getTransicoes().put("a", new HashSet<>());
-        q3.getTransicoes().put("b", new HashSet<>());
-
-        return new AFND(q0, estados, alfabeto);
-    }
-
-    private static void imprimirAFND(AFND afnd) {
-        System.out.printf("Alfabeto: %s\n", Arrays.toString(afnd.getAlfabeto()));
-        System.out.printf("Estado Inicial: q%d\n\n", afnd.getEstadoInicial().getId());
-
-        System.out.println("Estados e Transições:");
-        System.out.println("┌─────┬──────────┬─────────────┐");
-        System.out.println("│ Est │ Final?   │ Transições  │");
-        System.out.println("├─────┼──────────┼─────────────┤");
-
-        for (EstadoAFND estado : afnd.getEstados().values()) {
-            String nome = "q" + estado.getId();
-            String isFinal = estado.isFinal() ? "Sim" : "Não";
-            StringBuilder transicoes = new StringBuilder();
-
-            for (Map.Entry<String, Set<EstadoAFND>> entry : estado.getTransicoes().entrySet()) {
-                if (!entry.getValue().isEmpty()) {
-                    transicoes.append(entry.getKey()).append("→{");
-                    transicoes.append(entry.getValue().stream()
-                            .map(e -> "q" + e.getId())
-                            .sorted()
-                            .reduce((a, b) -> a + "," + b)
-                            .orElse(""));
-                    transicoes.append("} ");
+                    if (token.isPresent()) {
+                        System.out.println("TOKEN: " + token.get());
+                    } else {
+                        System.out.println("TOKEN: (nenhum) - string rejeitada");
+                    }
                 }
             }
-
-            System.out.printf("│ %s  │ %-8s │ %s│\n", nome, isFinal, transicoes);
         }
-
-        System.out.println("└─────┴──────────┴─────────────┘");
-    }
-
-    private static void imprimirAFD(AFD afd) {
-        System.out.printf("Alfabeto: %s\n", Arrays.toString(afd.getAlfabeto()));
-        System.out.printf("Estado Inicial: %s\n\n", afd.getEstadoInicial().getNome());
-
-        System.out.println("Estados e Transições:");
-        System.out.println("┌──────────────────┬──────────┬──────────────────────────┐");
-        System.out.println("│ Estado           │ Final?   │ Transições               │");
-        System.out.println("├──────────────────┼──────────┼──────────────────────────┤");
-
-        for (EstadoAFD estado : afd.getEstados().values()) {
-            String nome = estado.getNome();
-            String isFinal = estado.isFinal() ? "Sim" : "Não";
-            StringBuilder transicoes = new StringBuilder();
-
-            for (Map.Entry<String, EstadoAFD> entry : estado.getTransicoes().entrySet()) {
-                transicoes.append(entry.getKey()).append("→")
-                        .append(entry.getValue().getNome()).append(" ");
-            }
-
-            System.out.printf("│ %-16s │ %-8s │ %-24s│\n",
-                    nome, isFinal, transicoes.toString());
-        }
-
-        System.out.println("└──────────────────┴──────────┴──────────────────────────┘");
-    }
-
-    private static boolean testarCadeia(AFD afd, String cadeia) {
-        EstadoAFD estadoAtual = afd.getEstadoInicial();
-
-        for (char c : cadeia.toCharArray()) {
-            String simbolo = String.valueOf(c);
-            EstadoAFD proximoEstado = estadoAtual.getTransicoes().get(simbolo);
-
-            if (proximoEstado == null) {
-                return false;
-            }
-            estadoAtual = proximoEstado;
-        }
-
-        return estadoAtual.isFinal();
     }
 }
