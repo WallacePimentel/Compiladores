@@ -16,23 +16,27 @@ public class TransformadorAFD {
         this.afd = transformar();
     }
 
-
-
     private AFD transformar() {
         Map<Set<EstadoAFND>, EstadoAFD> mapeamento = new HashMap<>();
         Queue<Set<EstadoAFND>> fila = new LinkedList<>();
         Map<String, EstadoAFD> estadosAFD = new HashMap<>();
 
-        // Estado inicial do AFD é o fecho epsilon do estado inicial do AFND
         Set<EstadoAFND> estadoInicialAFND = fechoEpsilon(Set.of(afnd.getEstadoInicial()));
         String nomeEstadoInicial = gerarNomeEstado(estadoInicialAFND);
-        EstadoAFD estadoInicialAFD = new EstadoAFD(nomeEstadoInicial, verificarFinal(estadoInicialAFND), new HashMap<>());
+
+        FinalInfo finIni = calcularFinalInfo(estadoInicialAFND);
+        EstadoAFD estadoInicialAFD = new EstadoAFD(
+                nomeEstadoInicial,
+                finIni.isFinal,
+                new HashMap<>(),
+                finIni.token,
+                finIni.prioridade
+        );
 
         mapeamento.put(estadoInicialAFND, estadoInicialAFD);
         estadosAFD.put(nomeEstadoInicial, estadoInicialAFD);
         fila.add(estadoInicialAFND);
 
-        // Subset construction
         while (!fila.isEmpty()) {
             Set<EstadoAFND> conjuntoAtual = fila.poll();
             EstadoAFD estadoAtualAFD = mapeamento.get(conjuntoAtual);
@@ -43,7 +47,14 @@ public class TransformadorAFD {
                 if (!proximoConjunto.isEmpty()) {
                     if (!mapeamento.containsKey(proximoConjunto)) {
                         String nomeNovoEstado = gerarNomeEstado(proximoConjunto);
-                        EstadoAFD novoEstadoAFD = new EstadoAFD(nomeNovoEstado, verificarFinal(proximoConjunto), new HashMap<>());
+                        FinalInfo fin = calcularFinalInfo(proximoConjunto);
+                        EstadoAFD novoEstadoAFD = new EstadoAFD(
+                                nomeNovoEstado,
+                                fin.isFinal,
+                                new HashMap<>(),
+                                fin.token,
+                                fin.prioridade
+                        );
 
                         mapeamento.put(proximoConjunto, novoEstadoAFD);
                         estadosAFD.put(nomeNovoEstado, novoEstadoAFD);
@@ -87,16 +98,34 @@ public class TransformadorAFD {
         return fechoEpsilon(proximos);
     }
 
-    private boolean verificarFinal(Set<EstadoAFND> estados) {
-        return estados.stream().anyMatch(EstadoAFND::isFinal);
-    }
-
     private String gerarNomeEstado(Set<EstadoAFND> estados) {
         List<Integer> ids = estados.stream()
                 .map(EstadoAFND::getId)
                 .sorted()
                 .toList();
         return "{" + String.join(",", ids.stream().map(String::valueOf).toList()) + "}";
+    }
+
+    private record FinalInfo(boolean isFinal, String token, int prioridade) {}
+
+    /**
+     * Se o conjunto contiver vários estados finais, escolhe o token de menor prioridade.
+     */
+    private FinalInfo calcularFinalInfo(Set<EstadoAFND> estados) {
+        String tokenEscolhido = null;
+        int prioEscolhida = Integer.MAX_VALUE;
+
+        for (EstadoAFND e : estados) {
+            if (!e.isFinal()) continue;
+            int prio = e.getPrioridade();
+            if (prio < prioEscolhida) {
+                prioEscolhida = prio;
+                tokenEscolhido = e.getToken();
+            }
+        }
+
+        boolean isFinal = tokenEscolhido != null;
+        return new FinalInfo(isFinal, tokenEscolhido, prioEscolhida);
     }
 
     public AFD getAFD() {
