@@ -8,10 +8,21 @@ public class EstadoAFD {
     private final boolean isFinal;
     private final Map<String, EstadoAFD> transicoes;
 
+    /** Token escolhido quando este estado for final (p/ scanner). */
+    private final String token;
+    /** Prioridade do token (menor = maior prioridade). */
+    private final int prioridade;
+
     public EstadoAFD(String nome, boolean isFinal, Map<String, EstadoAFD> transicoes) {
+        this(nome, isFinal, transicoes, null, Integer.MAX_VALUE);
+    }
+
+    public EstadoAFD(String nome, boolean isFinal, Map<String, EstadoAFD> transicoes, String token, int prioridade) {
         this.nome = nome;
         this.isFinal = isFinal;
         this.transicoes = transicoes;
+        this.token = token;
+        this.prioridade = prioridade;
     }
 
     public String getNome() {
@@ -24,6 +35,14 @@ public class EstadoAFD {
 
     public Map<String, EstadoAFD> getTransicoes() {
         return transicoes;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public int getPrioridade() {
+        return prioridade;
     }
 
     @Override

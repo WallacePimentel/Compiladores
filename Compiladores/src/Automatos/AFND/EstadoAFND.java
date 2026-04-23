@@ -6,7 +6,12 @@ import java.util.Set;
 
 public class EstadoAFND {
     private final int id;
-    private final boolean isFinal;
+    private boolean isFinal;
+    /** Token associado quando este estado for final (p/ scanner). */
+    private String token;
+    /** Prioridade do token (menor = maior prioridade). */
+    private int prioridade = Integer.MAX_VALUE;
+
     private Map<String, Set<EstadoAFND>> transicoes;
 
     public EstadoAFND(int id, boolean isFinal, Map<String, Set<EstadoAFND>> transicoes) {
@@ -21,6 +26,26 @@ public class EstadoAFND {
 
     public boolean isFinal() {
         return isFinal;
+    }
+
+    public void setFinal(boolean aFinal) {
+        isFinal = aFinal;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public int getPrioridade() {
+        return prioridade;
+    }
+
+    public void setPrioridade(int prioridade) {
+        this.prioridade = prioridade;
     }
 
     public void setTransicoes(Map<String, Set<EstadoAFND>> transicoes) {
