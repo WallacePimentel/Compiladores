@@ -7,35 +7,76 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) {
 
-        // Base digit = (0|1|2|3)
+        // --- Alfabeto base (simplificado) ---
         final String DIGIT = "(0|1|2|3|4|5|6|7|8|9)";
-        final String INT = DIGIT + "+";
+        final String LETTER = "(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)";
 
+        // Observação: este projeto usa uma notação própria de ER (ex.: '+' e '*' e '@').
+        // Aqui, mantemos um subconjunto de tokens típicos de Racket/Scheme.
+
+        // --- Tokens de Racket (subset) ---
+        // números: inteiro e float com separador '@' (conforme seu projeto)
+        final String INT = DIGIT + "+";
         final String FLOAT = DIGIT + "+@" + DIGIT + "+";
 
-        final String CHAR = "(a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)";
+        // strings: " ... " (conteúdo simplificado para letras/dígitos apenas)
+        // Como não há suporte óbvio a escape/qualquer-char no alfabeto atual, mantemos simplificado.
+        final String STRING_BODY = "(" + LETTER + "|" + DIGIT + ")";
+        final String STRING = "\"" + STRING_BODY + "\"";
 
-        final String STRING = CHAR + "(" + CHAR + "|" + DIGIT + ")*";
+        // identificadores: começam com letra, seguido de letra/dígito
+        // (Em Racket real, identificadores aceitam muito mais caracteres: !?+-*/<>= etc.)
+        final String IDENT = LETTER + "(" + LETTER + "|" + DIGIT + ")*";
 
-        System.out.println("Expressões regulares (posFixa):");
-        System.out.println("INT: " + RegexUtils.infixaParaPosfixa(INT));
-        System.out.println("FLOAT: " + RegexUtils.infixaParaPosfixa(FLOAT));
-        System.out.println("CHAR: " + RegexUtils.infixaParaPosfixa(CHAR));
-        System.out.println("STRING: " + RegexUtils.infixaParaPosfixa(STRING));
+        // símbolos/pontuação
+        final String LPAREN = "(";   // token "("
+        final String RPAREN = ")";   // token ")"
+        final String QUOTE = "'";    // token "'"
+
+        // booleanos
+        final String TRUE = "#t";
+        final String FALSE = "#f";
+
+        // palavras-chave (subset comum)
+        final String KW_DEFINE = "define";
+        final String KW_LAMBDA = "lambda";
+        final String KW_IF = "if";
+        final String KW_BEGIN = "begin";
+
+
+        // Importante: prioridade = ordem na lista.
+        // Keywords e tokens fixos vêm antes de IDENT.
         List<ExpressaoRegular> expressoes = List.of(
-                // palavras-chave (maior prioridade por vir primeiro)
-                new ExpressaoRegular(RegexUtils.infixaParaPosfixa("if"), "KW_IF"),
+                // pontuação
+//                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(LPAREN), "LPAREN"),
+//                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(RPAREN), "RPAREN"),
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(QUOTE), "QUOTE"), // token de aspas simples (')
 
-                // números
-                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(FLOAT), "FLOAT"),
-                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(INT), "INT"),
+                // booleanos
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(TRUE), "BOOL_TRUE"), // token de booleano verdadeiro (#t)
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(FALSE), "BOOL_FALSE"), // token de booleano falso (#f)
+
+                // keywords
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(KW_DEFINE), "KW_DEFINE"), // token de palavra-chave "define"
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(KW_LAMBDA), "KW_LAMBDA"), // token de palavra-chave "lambda"
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(KW_IF), "KW_IF"), // token de palavra-chave "if"
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(KW_BEGIN), "KW_BEGIN"), // token de palavra-chave "begin"
 
                 // literais
-                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(CHAR), "CHAR"),
-                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(STRING), "STRING")
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(STRING), "STRING"), // token de string (ex.: "hello123")
+
+                // números (FLOAT antes de INT)
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(FLOAT), "FLOAT"), // token de número float (ex.: 3@14)
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(INT), "INT"), // token de número inteiro (ex.: 42)
+
+                // identificadores (por último)
+                new ExpressaoRegular(RegexUtils.infixaParaPosfixa(IDENT), "IDENT") // token de identificador (ex.: foo, bar123)
         );
 
         GeradorScanner scanner = new GeradorScanner(expressoes);
+
+        System.out.println(scanner.getAfd().getEstados());
+
 
         System.out.println();
         System.out.println("Scanner pronto. Digite uma string para identificar o token (ENTER vazio para sair).\n");
