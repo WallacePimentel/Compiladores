@@ -1,5 +1,6 @@
 import GeradorScanner.GeradorScanner;
 import ExpressoesRegulares.ExpressaoRegular;
+import Parsers.ParserTopDown;
 import utils.RegexUtils;
 
 import java.io.IOException;
@@ -74,6 +75,7 @@ public class Main {
         final String QUASIQUOTE = "`";
         final String COMMA_AT = ",@";
         final String COMMA = ",";
+        final String DOT = "\\.";
 
         // booleanos
         final String TRUE = "#t";
@@ -127,6 +129,7 @@ public class Main {
             new ExpressaoRegular(RegexUtils.infixaParaPosfixa(QUASIQUOTE), "QUASIQUOTE"),
             new ExpressaoRegular(RegexUtils.infixaParaPosfixa(COMMA_AT), "UNQUOTE_SPLICING"),
             new ExpressaoRegular(RegexUtils.infixaParaPosfixa(COMMA), "UNQUOTE"),
+            new ExpressaoRegular(RegexUtils.infixaParaPosfixa(DOT), "DOT"),
 
             // booleanos
             new ExpressaoRegular(RegexUtils.infixaParaPosfixa(TRUE), "BOOL_TRUE"),
@@ -167,6 +170,7 @@ public class Main {
         Path baseDir = findBaseDirWithExemplos();
         Path inputPath = baseDir.resolve(Path.of("src", "exemplos", "teste.txt")).normalize();
         Path outputPath = baseDir.resolve(Path.of("src", "exemplos", "saida.txt")).normalize();
+        Path outputParserPath = baseDir.resolve(Path.of("src", "exemplos", "saida_parser.txt")).normalize();
         try {
             String entrada = Files.readString(inputPath, StandardCharsets.UTF_8);
             var tokens = scanner.tokenizar(entrada);
@@ -187,11 +191,51 @@ public class Main {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING
             );
+
+            // Parser Top-Down: tokens -> AST ou lista de erros
+            ParserTopDown.ParseResult parseResult = ParserTopDown.parseTokens(tokens);
+            StringBuilder saidaParser = new StringBuilder();
+            if (parseResult.accepted()) {
+                saidaParser.append("ACEITO").append(System.lineSeparator());
+                saidaParser.append(parseResult.program()).append(System.lineSeparator());
+            } else {
+                saidaParser.append("ERROS").append(System.lineSeparator());
+                for (var err : parseResult.errors()) {
+                    saidaParser
+                            .append("[")
+                            .append(err.tokenIndex())
+                            .append("] ")
+                            .append(err.tokenType())
+                            .append(" '")
+                            .append(err.lexeme())
+                            .append("': ")
+                            .append(err.message())
+                            .append(System.lineSeparator());
+                }
+            }
+
+            ensureParentDir(outputParserPath);
+            Files.writeString(
+                    outputParserPath,
+                    saidaParser.toString(),
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+            );
         } catch (IllegalArgumentException e) {
             try {
                 ensureParentDir(outputPath);
                 Files.writeString(
                         outputPath,
+                        "ERRO: " + e.getMessage() + System.lineSeparator(),
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING
+                );
+
+                ensureParentDir(outputParserPath);
+                Files.writeString(
+                        outputParserPath,
                         "ERRO: " + e.getMessage() + System.lineSeparator(),
                         StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE,
@@ -205,6 +249,15 @@ public class Main {
                 ensureParentDir(outputPath);
                 Files.writeString(
                         outputPath,
+                        "ERRO: " + e.getMessage() + System.lineSeparator(),
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING
+                );
+
+                ensureParentDir(outputParserPath);
+                Files.writeString(
+                        outputParserPath,
                         "ERRO: " + e.getMessage() + System.lineSeparator(),
                         StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE,
