@@ -1,0 +1,59 @@
+KW_LANG	#lang
+IDENT	racket
+SKIP_BLOCK_COMMENT	#|
+  Comentario de bloco
+  multilinha
+|#
+SKIP_LINE_COMMENT	; teste de comentário
+
+LPAREN	(
+KW_DEFINE	define
+LPAREN	(
+IDENT	f
+IDENT	x
+RPAREN	)
+HASH_SEMI	#;
+LPAREN	(
+IDENT	display
+STRING	"ignorado"
+RPAREN	)
+LPAREN	(
+IDENT	*
+IDENT	x
+IDENT	x
+RPAREN	)
+RPAREN	)
+LPAREN	(
+KW_DEFINE	define
+IDENT	vetor
+VECTOR_START	#(
+INT	1
+INT	2
+INT	3
+RPAREN	)
+RPAREN	)
+LPAREN	(
+KW_DEFINE	define
+IDENT	string-simples
+STRING	"Ola, mundo!"
+RPAREN	)
+LPAREN	(
+KW_DEFINE	define
+IDENT	string-com-escapes
+STRING	"Linha 1\nLinha 2\t\"Entre aspas\" \\"
+RPAREN	)
+LPAREN	(
+KW_DEFINE	define
+IDENT	char-simples
+CHAR	#\a
+RPAREN	)
+LPAREN	(
+KW_DEFINE	define
+IDENT	char-espaco
+CHAR	#\space
+RPAREN	)
+LPAREN	(
+KW_DEFINE	define
+IDENT	char-nova-linha
+CHAR	#\newline
+RPAREN	)
