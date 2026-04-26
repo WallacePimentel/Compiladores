@@ -9,58 +9,102 @@ public class RegexUtils {
             throw new IllegalArgumentException("Expressão vazia");
         }
 
-        String comConcat = inserirConcatenacao(regex);
+        List<String> tokens = tokenizarInfixa(regex);
+        List<String> comConcat = inserirConcatenacao(tokens);
         return converterParaPosfixa(comConcat);
     }
-
-    private static String inserirConcatenacao(String regex) {
-        StringBuilder sb = new StringBuilder();
+    
+    private static List<String> tokenizarInfixa(String regex) {
+        List<String> out = new ArrayList<>();
 
         for (int i = 0; i < regex.length(); i++) {
-            char c1 = regex.charAt(i);
-            sb.append(c1);
+            char c = regex.charAt(i);
 
-            if (i + 1 < regex.length()) {
-                char c2 = regex.charAt(i + 1);
+            if (Character.isWhitespace(c)) {
+                continue;
+            }
 
-                if (precisaConcatenar(c1, c2)) {
-                    sb.append('.');
+            if (c == '\\') {
+                if (i + 1 >= regex.length()) {
+                    throw new IllegalArgumentException("Escape incompleto no fim da expressão");
+                }
+                char n = regex.charAt(++i);
+                out.add("\\" + n);
+                continue;
+            }
+
+            if (c == '[') {
+                int end = regex.indexOf(']', i + 1);
+                if (end < 0) {
+                    throw new IllegalArgumentException("Classe de caracteres sem ']': " + regex.substring(i));
+                }
+                out.add(regex.substring(i, end + 1));
+                i = end;
+                continue;
+            }
+
+            // operadores e parênteses de agrupamento
+            if (c == '(' || c == ')' || c == '|' || c == '.' || c == '*' || c == '+' || c == '?') {
+                out.add(String.valueOf(c));
+                continue;
+            }
+
+            // literal simples
+            out.add(String.valueOf(c));
+        }
+
+        if (out.isEmpty()) {
+            throw new IllegalArgumentException("Expressão vazia");
+        }
+        return out;
+    }
+
+    private static List<String> inserirConcatenacao(List<String> tokens) {
+        List<String> out = new ArrayList<>();
+
+        for (int i = 0; i < tokens.size(); i++) {
+            String t1 = tokens.get(i);
+            out.add(t1);
+
+            if (i + 1 < tokens.size()) {
+                String t2 = tokens.get(i + 1);
+                if (precisaConcatenar(t1, t2)) {
+                    out.add(".");
                 }
             }
         }
-
-        return sb.toString();
+        return out;
     }
 
-    private static boolean precisaConcatenar(char c1, char c2) {
-        boolean c1Valido =
-                ehOperando(c1) ||
-                        c1 == ')' ||
-                        ehUnario(c1);
+    private static boolean precisaConcatenar(String t1, String t2) {
+        boolean t1Valido =
+                ehOperando(t1) ||
+                        ")".equals(t1) ||
+                        ehUnario(t1);
 
-        boolean c2Valido =
-                ehOperando(c2) ||
-                        c2 == '(';
+        boolean t2Valido =
+                ehOperando(t2) ||
+                        "(".equals(t2);
 
-        return c1Valido && c2Valido;
+        return t1Valido && t2Valido;
     }
 
-    private static String converterParaPosfixa(String regex) {
+    private static String converterParaPosfixa(List<String> tokens) {
         StringBuilder output = new StringBuilder();
-        Deque<Character> pilha = new ArrayDeque<>();
+        Deque<String> pilha = new ArrayDeque<>();
 
-        for (char c : regex.toCharArray()) {
+        for (String tk : tokens) {
 
-            if (ehOperando(c)) {
-                output.append(c);
+            if (ehOperando(tk)) {
+                output.append(tk);
             }
 
-            else if (c == '(') {
-                pilha.push(c);
+            else if ("(".equals(tk)) {
+                pilha.push(tk);
             }
 
-            else if (c == ')') {
-                while (!pilha.isEmpty() && pilha.peek() != '(') {
+            else if (")".equals(tk)) {
+                while (!pilha.isEmpty() && !"(".equals(pilha.peek())) {
                     output.append(pilha.pop());
                 }
                 if (pilha.isEmpty()) {
@@ -69,24 +113,24 @@ public class RegexUtils {
                 pilha.pop();
             }
 
-            else if (ehOperador(c)) {
-                while (!pilha.isEmpty() && (
-                        precedencia(pilha.peek()) > precedencia(c) ||
-                                (precedencia(pilha.peek()) == precedencia(c) && !ehUnario(c))
+            else if (ehOperador(tk)) {
+                while (!pilha.isEmpty() && ehOperador(pilha.peek()) && (
+                        precedencia(pilha.peek()) > precedencia(tk) ||
+                                (precedencia(pilha.peek()) == precedencia(tk) && !ehUnario(tk))
                 )) {
                     output.append(pilha.pop());
                 }
-                pilha.push(c);
+                pilha.push(tk);
             }
 
             else {
-                throw new IllegalArgumentException("Símbolo inválido na regex: " + c);
+                throw new IllegalArgumentException("Token inválido na regex: " + tk);
             }
         }
 
         while (!pilha.isEmpty()) {
-            char op = pilha.pop();
-            if (op == '(' || op == ')') {
+            String op = pilha.pop();
+            if ("(".equals(op) || ")".equals(op)) {
                 throw new IllegalArgumentException("Parênteses desbalanceados");
             }
             output.append(op);
@@ -96,19 +140,20 @@ public class RegexUtils {
     }
 
 
-    private static boolean ehOperador(char c) {
-        return c == '|' || c == '.' || c == '*' || c == '+' || c == '?';
+    private static boolean ehOperador(String tk) {
+        return tk.length() == 1 && "|.*+?".indexOf(tk.charAt(0)) >= 0;
     }
 
-    private static boolean ehOperando(char c) {
-        return !ehOperador(c) && c != '(' && c != ')';
+    private static boolean ehOperando(String tk) {
+        return !ehOperador(tk) && !"(".equals(tk) && !")".equals(tk);
     }
 
-    private static boolean ehUnario(char c) {
-        return c == '*' || c == '+' || c == '?';
+    private static boolean ehUnario(String tk) {
+        return "*".equals(tk) || "+".equals(tk) || "?".equals(tk);
     }
 
-    private static int precedencia(char op) {
+    private static int precedencia(String tk) {
+        char op = tk.charAt(0);
         return switch (op) {
             case '*', '+', '?' -> 3;
             case '.' -> 2;
