@@ -1,0 +1,11 @@
+; Ponto solto
+.
+
+; Faltando lado direito
+(a .)
+
+; Mais de uma expressão após o ponto (Erro clássico que o parser deve pegar)
+(a . b c)
+
+; Ponto no início
+(. a b)

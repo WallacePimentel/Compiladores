@@ -1,0 +1,17 @@
+; lista simples e vazia
+()
+[]
+{}
+
+; aninhamento profundo
+(a (b (c (d (e)))))
+
+; mistura de delimitadores
+(let ([x 10]
+      [y 20])
+  {+ x y})
+
+; Átomos soltos
+42
+"string solta"
+123alpha ; comentario solto

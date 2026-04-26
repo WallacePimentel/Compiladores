@@ -1,0 +1,9 @@
+; faltando fechar o vetor
+#(1 2 3
+
+; fechar com o delimitador errado
+#(1 2 3]
+
+; Um unquote (,) solto fora de um quasiquote
+,a
+,@b

@@ -1,30 +1,6 @@
-ACEITO
-Program
-|-- Form[0]: Quote kind=QUOTE
-|   `-- datum: Atom kind=SYMBOL token=IDENT lexeme='simbolo'
-|-- Form[1]: Quote kind=QUOTE
-|   `-- datum: List delim=PAREN size=3
-|       |-- elem[0]: Atom kind=NUMBER token=INT lexeme='1'
-|       |-- elem[1]: Atom kind=NUMBER token=INT lexeme='2'
-|       `-- elem[2]: Atom kind=NUMBER token=INT lexeme='3'
-|-- Form[2]: Quote kind=QUOTE
-|   `-- datum: List delim=PAREN size=0
-|       `-- (empty)
-|-- Form[3]: Quote kind=QUASIQUOTE
-|   `-- datum: List delim=PAREN size=3
-|       |-- elem[0]: Atom kind=SYMBOL token=IDENT lexeme='a'
-|       |-- elem[1]: Atom kind=SYMBOL token=IDENT lexeme='b'
-|       `-- elem[2]: Quote kind=UNQUOTE
-|           `-- datum: Atom kind=SYMBOL token=IDENT lexeme='c'
-|-- Form[4]: Quote kind=QUASIQUOTE
-|   `-- datum: List delim=PAREN size=2
-|       |-- elem[0]: Atom kind=SYMBOL token=IDENT lexeme='a'
-|       `-- elem[1]: Quote kind=UNQUOTE_SPLICING
-|           `-- datum: List delim=PAREN size=3
-|               |-- elem[0]: Atom kind=SYMBOL token=IDENT lexeme='list'
-|               |-- elem[1]: Atom kind=SYMBOL token=IDENT lexeme='b'
-|               `-- elem[2]: Atom kind=SYMBOL token=IDENT lexeme='c'
-`-- Form[5]: Quote kind=QUOTE
-    `-- datum: Quote kind=QUOTE
-        `-- datum: Atom kind=SYMBOL token=IDENT lexeme='a'
-
+ERROS
+[9] UNQUOTE ',': Fechamento inesperado: RBRACK
+[9] UNQUOTE ',': unquote (,) fora de quasiquote
+[11] UNQUOTE_SPLICING ',@': unquote-splicing (,@) fora de quasiquote
+[13] <EOF> '': Esperado ')' para fechar vetor iniciado por '#('
+[13] <EOF> '': Esperado ')' para fechar vetor iniciado por '#('

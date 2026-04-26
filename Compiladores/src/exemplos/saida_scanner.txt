@@ -1,0 +1,16 @@
+SKIP_LINE_COMMENT	; faltando fechar o vetor
+VECTOR_START	#(
+INT	1
+INT	2
+INT	3
+SKIP_LINE_COMMENT	; fechar com o delimitador errado
+VECTOR_START	#(
+INT	1
+INT	2
+INT	3
+RBRACK	]
+SKIP_LINE_COMMENT	; Um unquote (,) solto fora de um quasiquote
+UNQUOTE	,
+IDENT	a
+UNQUOTE_SPLICING	,@
+IDENT	b

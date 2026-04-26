@@ -1,0 +1,8 @@
+; Vetor vazio
+#()
+
+; Vetor com elementos
+#(1 2 3)
+
+; Vetor aninhado com listas e pares
+#(1 (a b) (c . d) #(4 5))

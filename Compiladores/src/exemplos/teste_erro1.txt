@@ -1,0 +1,9 @@
+; faltando fechar
+(define a 10
+
+; sobrando fechar
+(define a 10))
+
+; fechamento com delimitador errado
+(define a 10]
+[1 2 3}

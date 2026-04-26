@@ -170,8 +170,10 @@ public class Main {
         GeradorScanner scanner = new GeradorScanner(expressoes);
 
         Path baseDir = findBaseDirWithExemplos();
-        Path inputPath = baseDir.resolve(Path.of("src", "exemplos", "teste.txt")).normalize();
-        Path outputPath = baseDir.resolve(Path.of("src", "exemplos", "saida.txt")).normalize();
+        Path inputPath;
+        Scanner console = new Scanner(System.in, StandardCharsets.UTF_8.name());
+        inputPath = escolherArquivoDeTeste(console, baseDir);
+        Path outputPath = baseDir.resolve(Path.of("src", "exemplos", "saida_scanner.txt")).normalize();
         Path outputParserPath = baseDir.resolve(Path.of("src", "exemplos", "saida_parser.txt")).normalize();
         try {
             String entrada = Files.readString(inputPath, StandardCharsets.UTF_8);
@@ -269,6 +271,50 @@ public class Main {
                 throw new RuntimeException("Falha ao escrever saida em '" + outputPath + "'", io);
             }
         }
+    }
+
+    private static Path escolherArquivoDeTeste(Scanner console, Path baseDir) {
+        // 1) escolher categoria: erro ou sucesso
+        String categoria;
+        while (true) {
+            System.out.print("Escolha o tipo de teste (erro/sucesso): ");
+            if (!console.hasNextLine()) {
+                throw new IllegalStateException("Entrada encerrada antes de escolher o tipo de teste.");
+            }
+            String raw = console.nextLine().trim().toLowerCase(Locale.ROOT);
+
+            if (raw.equals("erro") || raw.equals("e") || raw.equals("error")) {
+                categoria = "erro";
+                break;
+            }
+            if (raw.equals("sucesso") || raw.equals("s") || raw.equals("success")) {
+                categoria = "sucesso";
+                break;
+            }
+            System.out.println("Entrada invalida. Digite 'erro' ou 'sucesso'.");
+        }
+
+        // 2) escolher numero 1/2/3
+        int n;
+        while (true) {
+            System.out.print("Escolha o numero do teste (1/2/3): ");
+            if (!console.hasNextLine()) {
+                throw new IllegalStateException("Entrada encerrada antes de escolher o numero do teste.");
+            }
+            String raw = console.nextLine().trim();
+            try {
+                n = Integer.parseInt(raw);
+            } catch (NumberFormatException ex) {
+                n = -1;
+            }
+            if (n >= 1 && n <= 3) {
+                break;
+            }
+            System.out.println("Entrada invalida. Digite 1, 2 ou 3.");
+        }
+
+        String nomeArquivo = "teste_" + categoria + n + ".txt";
+        return baseDir.resolve(Path.of("src", "exemplos", nomeArquivo)).normalize();
     }
 
     private static Path findBaseDirWithExemplos() {
