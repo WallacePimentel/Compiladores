@@ -108,9 +108,6 @@ public class TransformadorAFD {
 
     private record FinalInfo(boolean isFinal, String token, int prioridade) {}
 
-    /**
-     * Se o conjunto contiver vários estados finais, escolhe o token de menor prioridade.
-     */
     private FinalInfo calcularFinalInfo(Set<EstadoAFND> estados) {
         String tokenEscolhido = null;
         int prioEscolhida = Integer.MAX_VALUE;

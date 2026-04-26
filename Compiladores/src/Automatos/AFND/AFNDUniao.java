@@ -2,12 +2,6 @@ package Automatos.AFND;
 
 import java.util.*;
 
-/**
- * Faz a união (OR) de vários AFNDs já construídos.
- * Cria um novo estado inicial com transições ε para o inicial de cada AFND.
- *
- * Importante: preserva ids únicos (faz remapeamento) e preserva token/prioridade em estados finais.
- */
 public final class AFNDUniao {
     private AFNDUniao() {}
 

@@ -8,9 +8,7 @@ public class EstadoAFD {
     private final boolean isFinal;
     private final Map<String, EstadoAFD> transicoes;
 
-    /** Token escolhido quando este estado for final (p/ scanner). */
     private final String token;
-    /** Prioridade do token (menor = maior prioridade). */
     private final int prioridade;
 
     public EstadoAFD(String nome, boolean isFinal, Map<String, EstadoAFD> transicoes) {

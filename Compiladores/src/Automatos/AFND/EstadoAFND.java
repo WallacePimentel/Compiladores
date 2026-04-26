@@ -7,9 +7,7 @@ import java.util.Set;
 public class EstadoAFND {
     private final int id;
     private boolean isFinal;
-    /** Token associado quando este estado for final (p/ scanner). */
     private String token;
-    /** Prioridade do token (menor = maior prioridade). */
     private int prioridade = Integer.MAX_VALUE;
 
     private Map<String, Set<EstadoAFND>> transicoes;

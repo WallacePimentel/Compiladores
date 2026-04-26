@@ -4,23 +4,6 @@ import ExpressoesRegulares.ExpressaoRegular;
 
 import java.util.*;
 
-/**
- * Constrói AFND (com ε) a partir de expressão regular em pós-fixa (notação polonesa reversa)
- * via construção de Thompson.
- *
- * Convenções de operadores (pós-fixa):
- * - '.'  concatenação
- * - '|'  união
- * - '*'  fecho de Kleene
- * - '+'  um ou mais
- * - '?'  opcional
- *
- * Operandos:
- * - literais (1 caractere) ou escapes (ex.: \", \\, \\n)
- * - classes de caracteres: [a-z], [0-9] (sem negar ^)
- *
- * Observação: o caractere '.' é reservado como operador; para ponto literal use escape: \\.
- */
 public final class AFNDBuilderThompson {
     public static final String EPSILON = "ε";
 
@@ -114,12 +97,12 @@ public final class AFNDBuilderThompson {
                         throw new IllegalStateException("Operador desconhecido: " + tk);
                 }
             } else {
-                // operando: literal (1 char)
-                alfabeto.add(tk);
+                String simbolo = normalizarOperando(tk);
+                alfabeto.add(simbolo);
 
                 EstadoAFND s = novoEstado(estados);
                 EstadoAFND t = novoEstado(estados);
-                addTransicao(s, tk, t);
+                addTransicao(s, simbolo, t);
                 pilha.push(new Fragmento(s, Set.of(t)));
             }
         }
@@ -142,7 +125,7 @@ public final class AFNDBuilderThompson {
         return tk.length() == 1 && ".|*+?".indexOf(tk.charAt(0)) >= 0;
     }
 
-    /** Tokeniza a string pós-fixa em: operadores (1 char) e operandos (literais/escapes/classes). */
+    // Tokeniza a string pós-fixa em: operadores (1 char) e operandos (literais/escapes/classes).
     private static List<String> tokenizar(String s) {
         List<String> out = new ArrayList<>();
         for (int i = 0; i < s.length(); i++) {
@@ -152,7 +135,8 @@ public final class AFNDBuilderThompson {
             if (c == '\\') {
                 if (i + 1 >= s.length()) throw new IllegalArgumentException("Escape incompleto no fim da expressão");
                 char n = s.charAt(++i);
-                out.add(String.valueOf(desescape(n)));
+                // Mantém o escape como token (2 chars) para não confundir com operadores.
+                out.add("\\" + n);
                 continue;
             }
 
@@ -171,6 +155,13 @@ public final class AFNDBuilderThompson {
         return out;
     }
 
+    private static String normalizarOperando(String tk) {
+        if (tk != null && tk.length() == 2 && tk.charAt(0) == '\\') {
+            return String.valueOf(desescape(tk.charAt(1)));
+        }
+        return tk;
+    }
+
     private static char desescape(char n) {
         return switch (n) {
             case 'n' -> '\n';
@@ -179,16 +170,17 @@ public final class AFNDBuilderThompson {
             case '\\' -> '\\';
             case '\'' -> '\'';
             case '"' -> '"';
-            case '.' -> '.'; // permite ponto literal
             default -> n;
         };
     }
 
-    /**
-     * Expande somente padrões do tipo a-z ou 0-9; retorna como união pós-fixa "ab|c|...".
-     * Em pós-fixa, a expansão de [a-z] vira uma sequência de literais e operadores '|' adicionados ao stream.
-     */
     private static void expandirClasse(String cls, List<String> out) {
+        // suportar classe unitária: [x]
+        if (cls.length() == 1) {
+            out.add(tokenClasseChar(cls.charAt(0)));
+            return;
+        }
+
         // suportar exatamente X-Y
         if (cls.length() == 3 && cls.charAt(1) == '-') {
             char ini = cls.charAt(0);
@@ -198,14 +190,24 @@ public final class AFNDBuilderThompson {
             // empilha literais e vai unindo: a b | c | d | ...
             boolean first = true;
             for (char ch = ini; ch <= fim; ch++) {
-                out.add(String.valueOf(ch));
+                out.add(tokenClasseChar(ch));
                 if (!first) out.add("|");
                 first = false;
             }
             return;
         }
 
-        throw new IllegalArgumentException("Classe não suportada: [" + cls + "] (use [a-z] ou [0-9])");
+        throw new IllegalArgumentException("Classe não suportada: [" + cls + "] (use [x] ou [a-z])");
+    }
+
+    private static String tokenClasseChar(char ch) {
+        // Se o caractere é um operador da nossa regex (pós-fixa), precisa ser escapado
+        // para ser tratado como operando literal.
+        if (ch == '\\') return "\\\\";
+        if (ch == '|' || ch == '.' || ch == '*' || ch == '+' || ch == '?') {
+            return "\\" + ch;
+        }
+        return String.valueOf(ch);
     }
 
     private static Fragmento pop(Deque<Fragmento> pilha, char op) {
