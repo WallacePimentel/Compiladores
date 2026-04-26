@@ -14,6 +14,8 @@ public class GeradorScanner {
     private final List<ExpressaoRegular> expressoes;
     private final AFD afd;
 
+    public record Token(String tipo, String lexema) {}
+
     public GeradorScanner(List<ExpressaoRegular> expressoes) {
         if (expressoes == null || expressoes.isEmpty()) {
             throw new IllegalArgumentException("Lista de expressoes regulares vazia");
@@ -21,11 +23,21 @@ public class GeradorScanner {
         this.expressoes = List.copyOf(expressoes);
 
         // 1) AFND para cada ER (Thompson)
-        AFNDBuilderThompson AFNDBuilder = new AFNDBuilderThompson();
+        AFNDBuilderThompson afndBuilder = new AFNDBuilderThompson();
         List<AFND> afnds = new ArrayList<>();
         for (int i = 0; i < this.expressoes.size(); i++) {
             ExpressaoRegular expressaoRegular = this.expressoes.get(i);
-            AFND afnd = AFNDBuilder.construir(expressaoRegular);
+            final AFND afnd;
+            try {
+                afnd = afndBuilder.construir(expressaoRegular);
+            } catch (RuntimeException e) {
+                throw new IllegalArgumentException(
+                        "Falha ao construir AFND para token '" + expressaoRegular.getToken() +
+                                "' (posfixa='" + expressaoRegular.getExpressao() + "')",
+                        e
+                );
+            }
+
             // prioridade = ordem declarada
             for (var estadoAFND : afnd.getEstados().values()) {
                 if (estadoAFND.isFinal()) {
@@ -46,21 +58,64 @@ public class GeradorScanner {
         return afd;
     }
 
-    /**
-     * Identifica o token aceito pela string (match completo). Retorna vazio se não aceitar.
-     */
-    public Optional<String> identificarToken(String lexema) {
-        if (lexema == null) return Optional.empty();
+    public List<Token> tokenizar(String entrada) {
+        if (entrada == null || entrada.isEmpty()) return List.of();
 
-        EstadoAFD estado = afd.getEstadoInicial();
-        for (int i = 0; i < lexema.length(); i++) {
-            String s = String.valueOf(lexema.charAt(i));
-            EstadoAFD prox = estado.getTransicoes().get(s);
-            if (prox == null) return Optional.empty();
-            estado = prox;
+        List<Token> out = new ArrayList<>();
+        int i = 0;
+        while (i < entrada.length()) {
+            Match m = matchLongestAt(entrada, i);
+            if (m == null) {
+                char c = entrada.charAt(i);
+                throw new IllegalArgumentException(
+                        "ERRO: Nenhuma regra casa na posicao " + i + " (char '" + printable(c) + "')"
+                );
+            }
+
+            String tipo = m.token;
+            String lexema = entrada.substring(i, m.endExclusive);
+            
+            out.add(new Token(tipo, lexema));
+            
+            i = m.endExclusive;
         }
 
-        if (!estado.isFinal()) return Optional.empty();
-        return Optional.ofNullable(estado.getToken());
+        return out;
+    }
+
+    private static String printable(char c) {
+        return switch (c) {
+            case '\n' -> "\\n";
+            case '\r' -> "\\r";
+            case '\t' -> "\\t";
+            default -> String.valueOf(c);
+        };
+    }
+
+    private record Match(String token, int endExclusive) {}
+
+    private Match matchLongestAt(String input, int start) {
+        EstadoAFD estado = afd.getEstadoInicial();
+
+        int i = start;
+        int lastAccept = -1;
+        String lastToken = null;
+
+        while (i < input.length()) {
+            String s = String.valueOf(input.charAt(i));
+            EstadoAFD prox = estado.getTransicoes().get(s);
+            if (prox == null) break;
+
+            estado = prox;
+            i++;
+
+            if (estado.isFinal()) {
+                lastAccept = i;
+                lastToken = estado.getToken();
+            }
+        }
+
+        if (lastAccept < 0) return null;
+        return new Match(lastToken, lastAccept);
     }
 }
