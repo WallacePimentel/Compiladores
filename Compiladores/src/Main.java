@@ -1,6 +1,8 @@
 import GeradorScanner.GeradorScanner;
 import ExpressoesRegulares.ExpressaoRegular;
-import Parsers.ParserTopDown;
+import Parsers.ParserTopDown.ParserTopDown;
+import Parsers.ParserTopDown.utils.AstVisualizer;
+import Parsers.ParserTopDown.utils.ParseResult;
 import utils.RegexUtils;
 
 import java.io.IOException;
@@ -193,11 +195,11 @@ public class Main {
             );
 
             // Parser Top-Down: tokens -> AST ou lista de erros
-            ParserTopDown.ParseResult parseResult = ParserTopDown.parseTokens(tokens);
+            ParseResult parseResult = ParserTopDown.parseTokens(tokens);
             StringBuilder saidaParser = new StringBuilder();
             if (parseResult.accepted()) {
                 saidaParser.append("ACEITO").append(System.lineSeparator());
-                saidaParser.append(parseResult.program()).append(System.lineSeparator());
+                saidaParser.append(AstVisualizer.render(parseResult.program())).append(System.lineSeparator());
             } else {
                 saidaParser.append("ERROS").append(System.lineSeparator());
                 for (var err : parseResult.errors()) {

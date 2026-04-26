@@ -1,5 +1,11 @@
-; Um unquote solto
-,a
-,@b
+; O parser deve ler 'x e transformar internamente em (quote x)
+'simbolo
+'(1 2 3)
+'()
 
+; Quasiquote e Unquote
+`(a b ,c)          ; Deve virar: (quasiquote (a b (unquote c)))
+`(a ,@(list b c))  ; Deve virar: (quasiquote (a (unquote-splicing (list b c))))
 
+; Aninhamento de quotes (sim, isso é válido)
+''a                ; Deve virar: (quote (quote a))
