@@ -1,13 +1,5 @@
-#lang racket
-#|
-  Comentario de bloco
-  multilinha
-|#
-; teste de comentário
-(define (f x) #; (display "ignorado") (* x x))
-(define vetor #(1 2 3))
-(define string-simples "Ola, mundo!")
-(define string-com-escapes "Linha 1\nLinha 2\t\"Entre aspas\" \\")
-(define char-simples #\a)
-(define char-espaco #\space)
-(define char-nova-linha #\newline)
+; Um unquote solto
+,a
+,@b
+
+
