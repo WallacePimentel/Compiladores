@@ -1,6 +1,19 @@
-package Parsers;
+package Parsers.ParserTopDown;
 
 import GeradorScanner.GeradorScanner;
+import Parsers.ParserTopDown.utils.Atom;
+import Parsers.ParserTopDown.utils.AtomKind;
+import Parsers.ParserTopDown.utils.DelimKind;
+import Parsers.ParserTopDown.utils.DottedListExpr;
+import Parsers.ParserTopDown.utils.LangDirective;
+import Parsers.ParserTopDown.utils.ListExpr;
+import Parsers.ParserTopDown.utils.Node;
+import Parsers.ParserTopDown.utils.ParseError;
+import Parsers.ParserTopDown.utils.ParseResult;
+import Parsers.ParserTopDown.utils.Program;
+import Parsers.ParserTopDown.utils.QuoteExpr;
+import Parsers.ParserTopDown.utils.QuoteKind;
+import Parsers.ParserTopDown.utils.VectorExpr;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,82 +23,6 @@ import java.util.Set;
 
 public class ParserTopDown {
 
-	public enum QuoteKind {
-		QUOTE,
-		QUASIQUOTE,
-		UNQUOTE,
-		UNQUOTE_SPLICING
-	}
-
-	public enum DelimKind {
-		PAREN,
-		BRACKET,
-		BRACE,
-		VECTOR
-	}
-
-	public sealed interface Node permits Program, ListExpr, DottedListExpr, VectorExpr, QuoteExpr, Atom, LangDirective {
-	}
-
-	public record Program(List<Node> forms) implements Node {
-		public Program {
-			forms = List.copyOf(forms);
-		}
-	}
-
-	public record ListExpr(DelimKind delim, List<Node> elements) implements Node {
-		public ListExpr {
-			elements = List.copyOf(elements);
-		}
-	}
-
-	/**
-	 * Representa listas pontilhadas do reader de Scheme/Racket: (a b . c).
-	 * - prefix: elementos antes do '.' (>= 1)
-	 * - tail: o datum após '.'
-	 */
-	public record DottedListExpr(DelimKind delim, List<Node> prefix, Node tail) implements Node {
-		public DottedListExpr {
-			prefix = List.copyOf(prefix);
-			Objects.requireNonNull(tail, "tail");
-		}
-	}
-
-	public record VectorExpr(List<Node> elements) implements Node {
-		public VectorExpr {
-			elements = List.copyOf(elements);
-		}
-	}
-
-	public record QuoteExpr(QuoteKind kind, Node datum) implements Node {
-	}
-
-	public enum AtomKind {
-		SYMBOL,
-		STRING,
-		CHAR,
-		BOOLEAN,
-		NUMBER
-	}
-
-	public record Atom(AtomKind kind, String tokenType, String lexeme) implements Node {
-	}
-
-	public record LangDirective(String languageLexeme) implements Node {
-	}
-
-	public record ParseError(int tokenIndex, String tokenType, String lexeme, String message) {
-	}
-
-	public record ParseResult(Program program, List<ParseError> errors) {
-		public ParseResult {
-			errors = List.copyOf(errors);
-		}
-
-		public boolean accepted() {
-			return errors.isEmpty();
-		}
-	}
 
 	private static final Set<String> NUMBER_TOKENS = Set.of(
 			"INT", "FLOAT", "RATIO", "SCIENTIFIC", "COMPLEX", "IMAG",
