@@ -1,0 +1,32 @@
+ERROS ENCONTRADOS
+
+---
+Linha 5: #(1 2 3]
+
+Problema: Fechamento inesperado: colchete fechado ']'
+Token recebido: desquote ","
+
+---
+Linha 8: ,a
+
+Problema: unquote (,) fora de quasiquote
+Token recebido: desquote ","
+
+---
+Linha 9: ,@b
+
+Problema: unquote-splicing (,@) fora de quasiquote
+Token recebido: desquote com splicing ",@"
+
+---
+Linha 2: #(1 2 3
+
+Problema: Esperado ')' para fechar vetor iniciado por '#('
+Token recebido: fim do arquivo ""
+
+---
+Linha 2: #(1 2 3
+
+Problema: Esperado ')' para fechar vetor iniciado por '#('
+Token recebido: fim do arquivo ""
+
