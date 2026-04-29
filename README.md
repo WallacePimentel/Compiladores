@@ -69,3 +69,4 @@ Depois de executar, as saídas são gravadas em:
 
 - `src/exemplos/saida_scanner.txt` (tokens do scanner)
 - `src/exemplos/saida_parser.txt` (resultado do parser/Ast ou lista de erros)
+- `src/exemplos/saida_usuario.txt` (resultado do parser/Ast ou lista de erros melhorada para o programador)
