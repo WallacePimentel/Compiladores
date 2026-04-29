@@ -1,4 +1,5 @@
 import GeradorScanner.GeradorScanner;
+import GeradorScanner.TokenTranslator;
 import ExpressoesRegulares.ExpressaoRegular;
 import Parsers.ParserTopDown.ParserTopDown;
 import Parsers.ParserTopDown.utils.AstVisualizer;
@@ -175,6 +176,7 @@ public class Main {
         inputPath = escolherArquivoDeTeste(console, baseDir);
         Path outputPath = baseDir.resolve(Path.of("src", "exemplos", "saida_scanner.txt")).normalize();
         Path outputParserPath = baseDir.resolve(Path.of("src", "exemplos", "saida_parser.txt")).normalize();
+        Path outputUsuarioPath = baseDir.resolve(Path.of("src", "exemplos", "saida_usuario.txt")).normalize();
         try {
             String entrada = Files.readString(inputPath, StandardCharsets.UTF_8);
             var tokens = scanner.tokenizar(entrada);
@@ -226,6 +228,16 @@ public class Main {
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING
             );
+
+            String saidaUsuario = generateUsuarioOutput(entrada, tokens, parseResult);
+            ensureParentDir(outputUsuarioPath);
+            Files.writeString(
+                    outputUsuarioPath,
+                    saidaUsuario,
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+            );
         } catch (IllegalArgumentException e) {
             try {
                 ensureParentDir(outputPath);
@@ -241,6 +253,16 @@ public class Main {
                 Files.writeString(
                         outputParserPath,
                         "ERRO: " + e.getMessage() + System.lineSeparator(),
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING
+                );
+
+                ensureParentDir(outputUsuarioPath);
+                Files.writeString(
+                        outputUsuarioPath,
+                        "ERRO NO SCANNER\n\nNão foi possível processar o arquivo de entrada.\n" +
+                        "Mensagem: " + e.getMessage() + System.lineSeparator(),
                         StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE,
                         StandardOpenOption.TRUNCATE_EXISTING
@@ -263,6 +285,16 @@ public class Main {
                 Files.writeString(
                         outputParserPath,
                         "ERRO: " + e.getMessage() + System.lineSeparator(),
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING
+                );
+
+                ensureParentDir(outputUsuarioPath);
+                Files.writeString(
+                        outputUsuarioPath,
+                        "ERRO AO LER O ARQUIVO\n\nNão foi possível ler o arquivo de entrada.\n" +
+                        "Mensagem: " + e.getMessage() + System.lineSeparator(),
                         StandardCharsets.UTF_8,
                         StandardOpenOption.CREATE,
                         StandardOpenOption.TRUNCATE_EXISTING
@@ -336,5 +368,190 @@ public class Main {
         if (parent != null && !Files.exists(parent)) {
             Files.createDirectories(parent);
         }
+    }
+
+    private static String generateUsuarioOutput(String entrada, List<GeradorScanner.Token> tokens, ParseResult parseResult) {
+        StringBuilder resultado = new StringBuilder();
+
+        if (parseResult.accepted()) {
+            resultado.append("PROGRAMA ACEITO").append(System.lineSeparator());
+            resultado.append(System.lineSeparator());
+            resultado.append("Seu programa foi processado com sucesso!").append(System.lineSeparator());
+        } else {
+            resultado.append("ERROS ENCONTRADOS").append(System.lineSeparator());
+            resultado.append(System.lineSeparator());
+
+            String[] linhas = entrada.split("\n", -1);
+
+            for (var err : parseResult.errors()) {
+                resultado.append("---").append(System.lineSeparator());
+                
+                int linhaDoErro = resolverLinhaErro(tokens, err.tokenIndex(), err.tokenType(), err.message());
+                
+                resultado.append("Linha ").append(linhaDoErro).append(": ");
+                
+                if (linhaDoErro > 0 && linhaDoErro <= linhas.length) {
+                    String linhaTexto = linhas[linhaDoErro - 1];
+                    resultado.append(linhaTexto).append(System.lineSeparator());
+                } else {
+                    resultado.append("[fim do arquivo]").append(System.lineSeparator());
+                }
+                
+                resultado.append(System.lineSeparator());
+                
+                String mensagemTraduzida = TokenTranslator.translateErrorMessage(err.message());
+                resultado.append("Problema: ").append(mensagemTraduzida).append(System.lineSeparator());
+                
+                String tokenDesc = TokenTranslator.describeTokenWithLexeme(err.tokenType(), err.lexeme());
+                resultado.append("Token recebido: ").append(tokenDesc).append(System.lineSeparator());
+                resultado.append(System.lineSeparator());
+            }
+        }
+
+        return resultado.toString();
+    }
+
+    private static int resolverLinhaErro(List<GeradorScanner.Token> tokens, int tokenIndex, String tokenType, String errorMessage) {
+        List<GeradorScanner.Token> tokensNaoSkip = new ArrayList<>();
+        for (var token : tokens) {
+            if (!token.tipo().startsWith("SKIP_")) {
+                tokensNaoSkip.add(token);
+            }
+        }
+
+        if (tokensNaoSkip.isEmpty()) {
+            return 1;
+        }
+
+        if (tokenType != null && tokenType.equals("<EOF>")) {
+            if (errorMessage.contains("vetor")) {
+                int linhaAbertura = encontrarAberturaNaoFechada(tokensNaoSkip, "VECTOR_START");
+                if (linhaAbertura >= 0) {
+                    return tokensNaoSkip.get(linhaAbertura).linha();
+                }
+            }
+            
+            String expectedClose = extrairTokenEsperado(errorMessage);
+            if (expectedClose != null) {
+                String expectedOpen = getCorrespondingOpeningDelimiter(expectedClose);
+                int linhaAbertura = encontrarAberturaNaoFechada(tokensNaoSkip, expectedOpen);
+                if (linhaAbertura >= 0) {
+                    return tokensNaoSkip.get(linhaAbertura).linha();
+                }
+            }
+        }
+
+        String tokenReal = extrairTokenRecebido(errorMessage);
+        if (tokenReal != null) {
+            int indiceToken = encontrarUltimaOcorrenciaAte(tokensNaoSkip, tokenReal, tokenIndex);
+            if (indiceToken >= 0) {
+                return tokensNaoSkip.get(indiceToken).linha();
+            }
+        }
+
+        if (tokenIndex >= 0 && tokenIndex < tokensNaoSkip.size()) {
+            return tokensNaoSkip.get(tokenIndex).linha();
+        }
+
+        return tokensNaoSkip.get(tokensNaoSkip.size() - 1).linha();
+    }
+
+    private static int encontrarUltimaOcorrenciaAte(List<GeradorScanner.Token> tokens, String tokenType, int tokenIndex) {
+        int limite = Math.min(tokenIndex, tokens.size() - 1);
+        for (int i = limite; i >= 0; i--) {
+            if (tokens.get(i).tipo().equals(tokenType)) {
+                return i;
+            }
+        }
+        for (int i = tokens.size() - 1; i > limite; i--) {
+            if (tokens.get(i).tipo().equals(tokenType)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int encontrarAberturaNaoFechada(List<GeradorScanner.Token> tokens, String openingType) {
+        List<Integer> pilha = new ArrayList<>();
+        String closingType = switch (openingType) {
+            case "LPAREN" -> "RPAREN";
+            case "LBRACK" -> "RBRACK";
+            case "LBRACE" -> "RBRACE";
+            case "VECTOR_START" -> "RPAREN";
+            default -> null;
+        };
+
+        if (closingType == null) {
+            return -1;
+        }
+
+        for (int i = 0; i < tokens.size(); i++) {
+            String tipo = tokens.get(i).tipo();
+            if (tipo.equals(openingType)) {
+                pilha.add(i);
+            } else if (tipo.equals(closingType)) {
+                if (!pilha.isEmpty()) {
+                    pilha.remove(pilha.size() - 1);
+                }
+            }
+        }
+
+        if (pilha.isEmpty()) {
+            return -1;
+        }
+        // Retorna o PRIMEIRO não-fechado
+        return pilha.get(0);
+    }
+
+    private static String getCorrespondingOpeningDelimiter(String closingDelimiter) {
+        return switch (closingDelimiter) {
+            case "RPAREN" -> "LPAREN";
+            case "RBRACK" -> "LBRACK";
+            case "RBRACE" -> "LBRACE";
+            default -> closingDelimiter;
+        };
+    }
+
+    private static String extrairTokenEsperado(String message) {
+        String[] tokens = {"RPAREN", "RBRACK", "RBRACE"};
+        int idx = message.indexOf("esperado ");
+        if (idx >= 0) {
+            String trecho = message.substring(idx + "esperado ".length());
+            for (String token : tokens) {
+                if (trecho.contains(token)) {
+                    return token;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String extrairTokenRecebido(String message) {
+        String[] tokens = {
+            "RPAREN", "LPAREN", "RBRACK", "LBRACK", "RBRACE", "LBRACE",
+            "UNQUOTE_SPLICING", "UNQUOTE", "QUASIQUOTE", "QUOTE", "DOT"
+        };
+
+        int idx = message.indexOf("mas veio ");
+        if (idx >= 0) {
+            String trecho = message.substring(idx + "mas veio ".length());
+            for (String token : tokens) {
+                if (trecho.contains(token)) {
+                    return token;
+                }
+            }
+        }
+
+        idx = message.indexOf(": ");
+        if (idx >= 0) {
+            String trecho = message.substring(idx + 2);
+            for (String token : tokens) {
+                if (trecho.contains(token)) {
+                    return token;
+                }
+            }
+        }
+
+        return null;
     }
 }

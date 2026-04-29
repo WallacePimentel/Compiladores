@@ -14,7 +14,7 @@ public class GeradorScanner {
     private final List<ExpressaoRegular> expressoes;
     private final AFD afd;
 
-    public record Token(String tipo, String lexema) {}
+    public record Token(String tipo, String lexema, int linha, int coluna) {}
 
     public GeradorScanner(List<ExpressaoRegular> expressoes) {
         if (expressoes == null || expressoes.isEmpty()) {
@@ -63,7 +63,13 @@ public class GeradorScanner {
 
         List<Token> out = new ArrayList<>();
         int i = 0;
+        int linha = 1;
+        int coluna = 1;
+        
         while (i < entrada.length()) {
+            int tokenLinha = linha;
+            int tokenColuna = coluna;
+            
             Match m = matchLongestAt(entrada, i);
             if (m == null) {
                 char c = entrada.charAt(i);
@@ -75,7 +81,16 @@ public class GeradorScanner {
             String tipo = m.token;
             String lexema = entrada.substring(i, m.endExclusive);
             
-            out.add(new Token(tipo, lexema));
+            out.add(new Token(tipo, lexema, tokenLinha, tokenColuna));
+            
+            for (char ch : lexema.toCharArray()) {
+                if (ch == '\n') {
+                    linha++;
+                    coluna = 1;
+                } else {
+                    coluna++;
+                }
+            }
             
             i = m.endExclusive;
         }
